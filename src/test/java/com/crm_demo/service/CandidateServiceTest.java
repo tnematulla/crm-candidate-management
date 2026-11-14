@@ -1,5 +1,6 @@
 package com.crm_demo.service;
 
+import com.crm_demo.dto.BulkImportResponse;
 import com.crm_demo.dto.CandidateFilterCriteria;
 import com.crm_demo.dto.CandidateRequest;
 import com.crm_demo.dto.CandidateResponse;
@@ -7,6 +8,7 @@ import com.crm_demo.entity.Candidate;
 import com.crm_demo.entity.CandidateStatus;
 import com.crm_demo.event.CandidateCreatedEvent;
 import com.crm_demo.event.CandidateStatusChangedEvent;
+import com.crm_demo.exception.BadRequestException;
 import com.crm_demo.exception.DuplicateResourceException;
 import com.crm_demo.exception.ResourceNotFoundException;
 import com.crm_demo.repository.CandidateRepository;
@@ -27,7 +29,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -196,5 +201,46 @@ class CandidateServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getTotalElements()).isEqualTo(1);
         assertThat(result.getContent().get(0).firstName()).isEqualTo("Jane");
+    }
+
+    @Test
+    @DisplayName("Bulk Import - Delegates to CandidateBatchProcessor")
+    void importCandidatesInBulk_delegates() {
+        BulkImportResponse expected = new BulkImportResponse(1, 1, 0, 10L, "Multi-Threaded", Collections.emptyList());
+        when(candidateBatchProcessor.processConcurrently(any())).thenReturn(expected);
+
+        BulkImportResponse actual = candidateService.importCandidatesInBulk(List.of(sampleRequest));
+
+        assertThat(actual).isEqualTo(expected);
+        verify(candidateBatchProcessor).processConcurrently(any());
+    }
+
+    @Test
+    @DisplayName("CSV Import - Parses CSV input and invokes batch processor")
+    void importCandidatesFromCsv_success() {
+        String csvContent = "firstName,lastName,email,phone,currentTitle,yearsOfExperience,expectedSalary,location,skills,status,summary\n" +
+                "Ada,Taylor,ada@example.com,+1-555-1234,Lead Engineer,8,130000.00,Remote,Java;Spring,OFFERED,Analyst";
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(csvContent.getBytes(StandardCharsets.UTF_8));
+        BulkImportResponse expected = new BulkImportResponse(1, 1, 0, 15L, "Multi-Threaded", Collections.emptyList());
+
+        when(candidateBatchProcessor.processConcurrently(any())).thenReturn(expected);
+
+        BulkImportResponse actual = candidateService.importCandidatesFromCsv(inputStream);
+
+        assertThat(actual).isEqualTo(expected);
+        verify(candidateBatchProcessor).processConcurrently(any());
+    }
+
+    @Test
+    @DisplayName("CSV Import - Malformed CSV throws BadRequestException")
+    void importCandidatesFromCsv_malformed_throwsBadRequest() {
+        ByteArrayInputStream closedStream = new ByteArrayInputStream(new byte[0]);
+        // A stream that cannot be read properly or empty
+        // Let's pass a closed stream or an unparseable input
+        ByteArrayInputStream corruptStream = new ByteArrayInputStream("firstName,yearsOfExperience\nAda,not_a_number".getBytes(StandardCharsets.UTF_8));
+
+        assertThatThrownBy(() -> candidateService.importCandidatesFromCsv(corruptStream))
+                .isInstanceOf(BadRequestException.class);
     }
 }

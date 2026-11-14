@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -37,6 +38,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -238,5 +240,45 @@ class CandidateControllerTest {
                 .andExpect(jsonPath("$.totalSubmitted", is(1)))
                 .andExpect(jsonPath("$.totalSuccess", is(1)))
                 .andExpect(jsonPath("$.processingMechanism", containsString("Multi-Threaded")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/candidates/bulk-upload-csv - Valid CSV file returns 200 OK")
+    void uploadCsv_valid_returns200() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "candidates.csv", "text/csv",
+                "firstName,lastName,email\nTest,User,test.csv@example.com".getBytes()
+        );
+
+        BulkImportResponse bulkResponse = new BulkImportResponse(
+                1, 1, 0, 30L, "Multi-Threaded Parallel Chunk Executor", Collections.emptyList()
+        );
+
+        when(candidateService.importCandidatesFromCsv(any())).thenReturn(bulkResponse);
+
+        mockMvc.perform(multipart("/api/v1/candidates/bulk-upload-csv").file(file))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalSuccess", is(1)));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/candidates/bulk-upload-csv - Empty file returns 400 Bad Request")
+    void uploadCsv_empty_returns400() throws Exception {
+        MockMultipartFile emptyFile = new MockMultipartFile("file", "empty.csv", "text/csv", new byte[0]);
+
+        mockMvc.perform(multipart("/api/v1/candidates/bulk-upload-csv").file(emptyFile))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("must not be empty")));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/candidates - Ascending sort parameter parsing")
+    void searchAndFilter_ascendingSort() throws Exception {
+        when(candidateService.searchAndFilter(any(), any()))
+                .thenReturn(new PageImpl<>(Collections.emptyList()));
+
+        mockMvc.perform(get("/api/v1/candidates")
+                        .param("sort", "lastName,asc"))
+                .andExpect(status().isOk());
     }
 }
