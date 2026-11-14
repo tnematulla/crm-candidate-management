@@ -22,7 +22,7 @@ mvn -version
 
 ### 2.1 Clone and Navigate
 ```bash
-git clone <repository-url>
+git clone https://github.com/tnematulla/crm-candidate-management.git
 cd crm-candidate-management
 ```
 
