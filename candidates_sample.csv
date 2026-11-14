@@ -1,0 +1,5 @@
+firstName,lastName,email,phone,currentTitle,yearsOfExperience,expectedSalary,location,skills,status,summary
+Marcus,Vance,marcus.vance@example.com,+1-555-8881,Principal Systems Architect,15,175000.00,Remote,Java;Distributed Systems;Kafka;Spring Boot,INTERVIEWED,Seasoned engineering leader with deep expertise in resilient architecture.
+Grace,Watson,emily.watson@example.com,+1-555-8882,Compiler & Platform Engineer,12,160000.00,Washington, DC,Java;Compilers;C++;Algorithms,SCREENING,Compiler and systems optimization specialist.
+Alan,Brooks,daniel.brooks@example.com,+1-555-8883,Senior Algorithms Engineer,10,150000.00,London, UK,Java;Python;Cryptography;Data Structures,APPLIED,Specialist in algorithmic complexity and high-performance computing.
+Ada,Taylor,jessica.taylor@example.com,+1-555-8884,Lead Backend Developer,8,140000.00,Remote,Java;Spring Boot;PostgreSQL;Docker,OFFERED,Analytical engineer with strong mathematical and distributed system foundations.
