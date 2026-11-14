@@ -1,7 +1,11 @@
 package com.crm_demo.exception;
 
 import com.crm_demo.dto.ErrorResponse;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,8 +18,10 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -77,24 +83,61 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex, HttpServletRequest request) {
-        log.warn("Constraint violation: {}", ex.getMessage());
+        Map<String, String> fieldErrors = new HashMap<>();
+        for (ConstraintViolation<?> violation : ex.getConstraintViolations()) {
+            String path = violation.getPropertyPath() != null ? violation.getPropertyPath().toString() : "parameter";
+            fieldErrors.put(path, violation.getMessage());
+        }
+        log.warn("Constraint violation: {}", fieldErrors);
         ErrorResponse errorResponse = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                ex.getMessage(),
-                request.getRequestURI()
+                "Validation failed for request parameters",
+                request.getRequestURI(),
+                fieldErrors.isEmpty() ? null : fieldErrors
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleMalformedJson(HttpMessageNotReadableException ex, HttpServletRequest request) {
-        log.warn("Malformed HTTP request body: {}", ex.getMessage());
+        log.warn("Malformed HTTP request body on {}: {}", request.getRequestURI(), ex.getMessage());
+        Map<String, String> fieldErrors = new HashMap<>();
+        String detailMessage = "Malformed JSON request body";
+
+        Throwable cause = ex.getCause();
+        if (cause instanceof InvalidFormatException ife) {
+            String fieldName = ife.getPath().stream()
+                    .map(ref -> ref.getFieldName() != null ? ref.getFieldName() : "[unknown]")
+                    .collect(Collectors.joining("."));
+
+            String targetType = ife.getTargetType() != null ? ife.getTargetType().getSimpleName() : "expected format";
+            String errorMsg = String.format("Invalid value '%s' for field '%s'. Expected type: %s",
+                    ife.getValue(), fieldName, targetType);
+
+            if (ife.getTargetType() != null && ife.getTargetType().isEnum()) {
+                errorMsg = String.format("Invalid value '%s' for field '%s'. Allowed values: %s",
+                        ife.getValue(), fieldName, Arrays.toString(ife.getTargetType().getEnumConstants()));
+            }
+
+            fieldErrors.put(fieldName, errorMsg);
+            detailMessage = "Invalid value provided for field: " + fieldName;
+        } else if (cause instanceof MismatchedInputException mie && !mie.getPath().isEmpty()) {
+            String fieldName = mie.getPath().stream()
+                    .map(ref -> ref.getFieldName() != null ? ref.getFieldName() : "[unknown]")
+                    .collect(Collectors.joining("."));
+            fieldErrors.put(fieldName, "Incorrect data type or structure for field");
+            detailMessage = "Data structure mismatch on field: " + fieldName;
+        } else if (cause instanceof JsonParseException jpe) {
+            detailMessage = "Syntax error in JSON: " + jpe.getOriginalMessage();
+        }
+
         ErrorResponse errorResponse = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                "Malformed JSON request body",
-                request.getRequestURI()
+                detailMessage,
+                request.getRequestURI(),
+                fieldErrors.isEmpty() ? null : fieldErrors
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
