@@ -92,7 +92,7 @@ class CandidateControllerTest {
         CandidateRequest request = new CandidateRequest(
                 "Alex", "Morgan", "not-a-valid-email", "+1-555-4321",
                 "Frontend Engineer", 4, new BigDecimal("105000.00"),
-                "Boston, MA", Set.of("React"), CandidateStatus.APPLIED, null
+                "Boston, MA", Set.of("React", "TypeScript", "HTML"), CandidateStatus.APPLIED, null
         );
 
         mockMvc.perform(post("/api/v1/candidates")
@@ -109,7 +109,7 @@ class CandidateControllerTest {
         CandidateRequest request = new CandidateRequest(
                 "Alex", "Morgan", "alex.morgan@example.com", "+1-555-4321",
                 "Engineer", 150, new BigDecimal("105000.00"),
-                "Boston, MA", Set.of("Java"), CandidateStatus.APPLIED, null
+                "Boston, MA", Set.of("Java", "Spring", "Docker"), CandidateStatus.APPLIED, null
         );
 
         mockMvc.perform(post("/api/v1/candidates")
@@ -121,11 +121,62 @@ class CandidateControllerTest {
     }
 
     @Test
+    @DisplayName("POST /api/v1/candidates - Less than 3 skills should return 400 Bad Request")
+    void createCandidate_insufficientSkills_returns400() throws Exception {
+        CandidateRequest request = new CandidateRequest(
+                "Alex", "Morgan", "alex.skills@example.com", "+1-555-4321",
+                "Engineer", 5, new BigDecimal("105000.00"),
+                "Boston, MA", Set.of("Java", "Spring"), CandidateStatus.APPLIED, null
+        );
+
+        mockMvc.perform(post("/api/v1/candidates")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status", is(400)))
+                .andExpect(jsonPath("$.fieldErrors.skills", containsString("At least 3 skills are required")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/candidates - Blank current title should return 400 Bad Request")
+    void createCandidate_blankTitle_returns400() throws Exception {
+        CandidateRequest request = new CandidateRequest(
+                "Alex", "Morgan", "alex.title@example.com", "+1-555-4321",
+                "", 5, new BigDecimal("105000.00"),
+                "Boston, MA", Set.of("Java", "Spring", "SQL"), CandidateStatus.APPLIED, null
+        );
+
+        mockMvc.perform(post("/api/v1/candidates")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status", is(400)))
+                .andExpect(jsonPath("$.fieldErrors.currentTitle", containsString("Current title is mandatory")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/candidates - Blank location should return 400 Bad Request")
+    void createCandidate_blankLocation_returns400() throws Exception {
+        CandidateRequest request = new CandidateRequest(
+                "Alex", "Morgan", "alex.loc@example.com", "+1-555-4321",
+                "Software Engineer", 5, new BigDecimal("105000.00"),
+                "", Set.of("Java", "Spring", "SQL"), CandidateStatus.APPLIED, null
+        );
+
+        mockMvc.perform(post("/api/v1/candidates")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status", is(400)))
+                .andExpect(jsonPath("$.fieldErrors.location", containsString("Location is mandatory")));
+    }
+
+    @Test
     @DisplayName("POST /api/v1/candidates - Duplicate email conflict should return 409 Conflict")
     void createCandidate_duplicateEmail_returns409() throws Exception {
         CandidateRequest request = new CandidateRequest(
-                "Alex", "Morgan", "alex.m@example.com", null, null,
-                3, null, null, null, null, null
+                "Alex", "Morgan", "alex.m@example.com", null, "Dev",
+                3, null, "Boston, MA", Set.of("Java", "Spring", "SQL"), null, null
         );
 
         when(candidateService.createCandidate(any(CandidateRequest.class)))
@@ -175,13 +226,13 @@ class CandidateControllerTest {
         CandidateRequest request = new CandidateRequest(
                 "Alex", "Morgan", "alex.updated@example.com", "+1-555-4321",
                 "Lead Frontend Engineer", 5, new BigDecimal("125000.00"),
-                "Boston, MA", Set.of("React", "Next.js"), CandidateStatus.INTERVIEWED, null
+                "Boston, MA", Set.of("React", "Next.js", "TypeScript"), CandidateStatus.INTERVIEWED, null
         );
 
         CandidateResponse response = new CandidateResponse(
                 1L, "Alex", "Morgan", "alex.updated@example.com", "+1-555-4321",
                 "Lead Frontend Engineer", 5, new BigDecimal("125000.00"),
-                "Boston, MA", Set.of("React", "Next.js"), CandidateStatus.INTERVIEWED, null,
+                "Boston, MA", Set.of("React", "Next.js", "TypeScript"), CandidateStatus.INTERVIEWED, null,
                 Instant.now(), Instant.now()
         );
 
@@ -241,7 +292,7 @@ class CandidateControllerTest {
     @DisplayName("POST /api/v1/candidates/batch - Multi-threaded batch import returns 200 OK")
     void batchImport_returns200() throws Exception {
         CandidateRequest request = new CandidateRequest(
-                "Alex", "Morgan", "alex.m@example.com", null, "Dev", 2, null, null, null, null, null
+                "Alex", "Morgan", "alex.m@example.com", null, "Dev", 2, null, "Boston, MA", Set.of("Java", "Spring", "Docker"), null, null
         );
 
         BulkImportResponse bulkResponse = new BulkImportResponse(

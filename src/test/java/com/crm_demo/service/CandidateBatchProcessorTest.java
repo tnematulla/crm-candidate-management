@@ -68,7 +68,7 @@ class CandidateBatchProcessorTest {
                     3,
                     new BigDecimal("95000.00"),
                     "City" + i,
-                    Set.of("Java"),
+                    Set.of("Java", "Spring Boot", "SQL"),
                     CandidateStatus.APPLIED,
                     "Summary " + i
             ));
@@ -95,9 +95,9 @@ class CandidateBatchProcessorTest {
         when(candidateRepository.existsByEmailIgnoreCase("candidate1@example.com")).thenReturn(false);
 
         List<CandidateRequest> requests = List.of(
-                new CandidateRequest("Valid", "One", "candidate1@example.com", null, "Dev", 2, null, null, null, null, null),
-                new CandidateRequest("Duplicate", "Two", "candidate2@example.com", null, "Dev", 3, null, null, null, null, null),
-                new CandidateRequest("", "Invalid", "candidate3@example.com", null, "Dev", 4, null, null, null, null, null) // blank first name
+                new CandidateRequest("Valid", "One", "candidate1@example.com", null, "Dev", 2, null, "Seattle", Set.of("Java", "Spring", "SQL"), null, null),
+                new CandidateRequest("Duplicate", "Two", "candidate2@example.com", null, "Dev", 3, null, "Seattle", Set.of("Java", "Spring", "SQL"), null, null),
+                new CandidateRequest("", "Invalid", "candidate3@example.com", null, "Dev", 4, null, "Seattle", Set.of("Java", "Spring", "SQL"), null, null) // blank first name
         );
 
         BulkImportResponse response = batchProcessor.processConcurrently(requests);

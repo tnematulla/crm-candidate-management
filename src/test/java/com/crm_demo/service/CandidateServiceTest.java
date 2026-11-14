@@ -69,7 +69,7 @@ class CandidateServiceTest {
         sampleCandidate = new Candidate(
                 "Jane", "Doe", "jane.doe@example.com", "+1-555-9999",
                 "Backend Engineer", 5, new BigDecimal("120000.00"),
-                "Seattle, WA", Set.of("Java", "Spring Boot"),
+                "Seattle, WA", Set.of("Java", "Spring Boot", "SQL"),
                 CandidateStatus.APPLIED, "Passionate Java developer"
         );
         sampleCandidate.setId(1L);
@@ -77,7 +77,7 @@ class CandidateServiceTest {
         sampleRequest = new CandidateRequest(
                 "Jane", "Doe", "jane.doe@example.com", "+1-555-9999",
                 "Backend Engineer", 5, new BigDecimal("120000.00"),
-                "Seattle, WA", Set.of("Java", "Spring Boot"),
+                "Seattle, WA", Set.of("Java", "Spring Boot", "SQL"),
                 CandidateStatus.APPLIED, "Passionate Java developer"
         );
     }
@@ -219,7 +219,7 @@ class CandidateServiceTest {
     @DisplayName("CSV Import - Parses CSV input and invokes batch processor")
     void importCandidatesFromCsv_success() {
         String csvContent = "firstName,lastName,email,phone,currentTitle,yearsOfExperience,expectedSalary,location,skills,status,summary\n" +
-                "Ada,Taylor,ada@example.com,+1-555-1234,Lead Engineer,8,130000.00,Remote,Java;Spring,OFFERED,Analyst";
+                "Ada,Taylor,ada@example.com,+1-555-1234,Lead Engineer,8,130000.00,Remote,Java;Spring;PostgreSQL,OFFERED,Analyst";
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(csvContent.getBytes(StandardCharsets.UTF_8));
         BulkImportResponse expected = new BulkImportResponse(1, 1, 0, 15L, "Multi-Threaded", Collections.emptyList());

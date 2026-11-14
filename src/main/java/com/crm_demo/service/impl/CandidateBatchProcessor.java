@@ -145,6 +145,15 @@ public class CandidateBatchProcessor {
         if (req.yearsOfExperience() == null || req.yearsOfExperience() < 0 || req.yearsOfExperience() > 80) {
             throw new IllegalArgumentException("Years of experience must be between 0 and 80 years");
         }
+        if (req.currentTitle() == null || req.currentTitle().isBlank()) {
+            throw new IllegalArgumentException("Current title is mandatory");
+        }
+        if (req.location() == null || req.location().isBlank()) {
+            throw new IllegalArgumentException("Location is mandatory");
+        }
+        if (req.skills() == null || req.skills().size() < 3) {
+            throw new IllegalArgumentException("At least 3 skills are required");
+        }
     }
 
     private <T> List<List<T>> partition(List<T> list, int size) {

@@ -29,6 +29,7 @@ public record CandidateRequest(
         @Size(max = 30, message = "Phone cannot exceed 30 characters")
         String phone,
 
+        @NotBlank(message = "Current title is mandatory")
         @Size(max = 150, message = "Current title cannot exceed 150 characters")
         String currentTitle,
 
@@ -40,10 +41,13 @@ public record CandidateRequest(
         @DecimalMin(value = "0.0", inclusive = true, message = "Expected salary cannot be negative")
         BigDecimal expectedSalary,
 
+        @NotBlank(message = "Location is mandatory")
         @Size(max = 100, message = "Location cannot exceed 100 characters")
         String location,
 
-        Set<String> skills,
+        @NotNull(message = "Skills are mandatory")
+        @Size(min = 3, message = "At least 3 skills are required")
+        Set<@NotBlank(message = "Skill name cannot be blank") String> skills,
 
         CandidateStatus status,
 
