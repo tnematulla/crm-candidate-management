@@ -104,6 +104,23 @@ class CandidateControllerTest {
     }
 
     @Test
+    @DisplayName("POST /api/v1/candidates - Experience exceeding 80 years should return 400 Bad Request")
+    void createCandidate_excessiveExperience_returns400() throws Exception {
+        CandidateRequest request = new CandidateRequest(
+                "Alex", "Morgan", "alex.morgan@example.com", "+1-555-4321",
+                "Engineer", 150, new BigDecimal("105000.00"),
+                "Boston, MA", Set.of("Java"), CandidateStatus.APPLIED, null
+        );
+
+        mockMvc.perform(post("/api/v1/candidates")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status", is(400)))
+                .andExpect(jsonPath("$.fieldErrors.yearsOfExperience", containsString("cannot exceed 80 years")));
+    }
+
+    @Test
     @DisplayName("POST /api/v1/candidates - Duplicate email conflict should return 409 Conflict")
     void createCandidate_duplicateEmail_returns409() throws Exception {
         CandidateRequest request = new CandidateRequest(

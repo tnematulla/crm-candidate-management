@@ -142,8 +142,8 @@ public class CandidateBatchProcessor {
         if (req.email() == null || req.email().isBlank() || !req.email().contains("@")) {
             throw new IllegalArgumentException("Valid email is mandatory");
         }
-        if (req.yearsOfExperience() == null || req.yearsOfExperience() < 0) {
-            throw new IllegalArgumentException("Years of experience must be zero or positive");
+        if (req.yearsOfExperience() == null || req.yearsOfExperience() < 0 || req.yearsOfExperience() > 80) {
+            throw new IllegalArgumentException("Years of experience must be between 0 and 80 years");
         }
     }
 

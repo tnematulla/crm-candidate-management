@@ -3,6 +3,7 @@ package com.crm_demo.dto;
 import com.crm_demo.entity.CandidateStatus;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -33,6 +34,7 @@ public record CandidateRequest(
 
         @NotNull(message = "Years of experience is mandatory")
         @Min(value = 0, message = "Years of experience cannot be negative")
+        @Max(value = 80, message = "Years of experience cannot exceed 80 years")
         Integer yearsOfExperience,
 
         @DecimalMin(value = "0.0", inclusive = true, message = "Expected salary cannot be negative")
