@@ -52,16 +52,19 @@ public class CandidateController {
     @PostMapping
     @Operation(summary = "Create candidate", description = "Creates a new candidate record with contact details and skills")
     public ResponseEntity<CandidateResponse> createCandidate(@Valid @RequestBody CandidateRequest request) {
-        log.info("REST request to create candidate: {}", request.email());
+        log.info("REST request to create candidate with email: '{}', title: '{}', experience: {} yrs",
+                request.email(), request.currentTitle(), request.yearsOfExperience());
         CandidateResponse response = candidateService.createCandidate(request);
+        log.info("Candidate successfully created with ID: {} and email: '{}'", response.id(), response.email());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get candidate by ID", description = "Retrieves a single candidate record by their unique ID")
     public ResponseEntity<CandidateResponse> getCandidateById(@PathVariable Long id) {
-        log.info("REST request to get candidate ID: {}", id);
+        log.info("REST request to get candidate by ID: {}", id);
         CandidateResponse response = candidateService.getCandidateById(id);
+        log.info("Successfully retrieved candidate ID: {} ({})", response.id(), response.email());
         return ResponseEntity.ok(response);
     }
 
@@ -101,6 +104,9 @@ public class CandidateController {
             @Parameter(description = "Sort criteria formatted as property,(asc|desc)")
             @RequestParam(defaultValue = "createdAt,desc") String sort
     ) {
+        log.info("REST request to search candidates: keyword='{}', status={}, skills={}, minExp={}, maxExp={}, location='{}', page={}, size={}, sort='{}'",
+                keyword, status, skills, minExperience, maxExperience, location, page, size, sort);
+
         Sort sortObj = parseSortParameter(sort);
         Pageable pageable = PageRequest.of(page, size, sortObj);
 
@@ -109,6 +115,8 @@ public class CandidateController {
         );
 
         Page<CandidateResponse> results = candidateService.searchAndFilter(criteria, pageable);
+        log.info("Search query returned {} candidates (total matching: {}, total pages: {})",
+                results.getNumberOfElements(), results.getTotalElements(), results.getTotalPages());
         return ResponseEntity.ok(results);
     }
 
@@ -117,8 +125,9 @@ public class CandidateController {
     public ResponseEntity<CandidateResponse> updateCandidate(
             @PathVariable Long id,
             @Valid @RequestBody CandidateRequest request) {
-        log.info("REST request to update candidate ID: {}", id);
+        log.info("REST request to update candidate ID: {} with email: '{}', status: {}", id, request.email(), request.status());
         CandidateResponse response = candidateService.updateCandidate(id, request);
+        log.info("Successfully updated candidate ID: {}", response.id());
         return ResponseEntity.ok(response);
     }
 
@@ -127,14 +136,17 @@ public class CandidateController {
     public ResponseEntity<Void> deleteCandidate(@PathVariable Long id) {
         log.info("REST request to delete candidate ID: {}", id);
         candidateService.deleteCandidate(id);
+        log.info("Successfully deleted candidate ID: {}", id);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/batch")
     @Operation(summary = "Bulk import candidates (JSON)", description = "Asynchronously processes a list of candidates in parallel chunks")
     public ResponseEntity<BulkImportResponse> importCandidatesInBulk(@RequestBody List<CandidateRequest> requests) {
-        log.info("REST request for JSON bulk import of {} candidates", requests.size());
+        log.info("REST request for JSON bulk import of {} candidate records", requests.size());
         BulkImportResponse response = candidateService.importCandidatesInBulk(requests);
+        log.info("JSON bulk import finished: {} submitted, {} success, {} failed in {} ms",
+                response.totalSubmitted(), response.totalSuccess(), response.totalFailed(), response.executionTimeMs());
         return ResponseEntity.ok(response);
     }
 
@@ -142,15 +154,18 @@ public class CandidateController {
     @Operation(summary = "Bulk import candidates (CSV)", description = "Parses and concurrently ingests candidates from a CSV file")
     public ResponseEntity<BulkImportResponse> importCandidatesFromCsv(@RequestParam("file") MultipartFile file) {
         if (file == null || file.isEmpty()) {
+            log.warn("Rejected CSV bulk upload: file is null or empty");
             throw new BadRequestException("Uploaded CSV file must not be empty");
         }
 
         try {
-            log.info("REST request for CSV bulk upload: filename={}, size={} bytes", file.getOriginalFilename(), file.getSize());
+            log.info("REST request for CSV bulk upload: filename='{}', size={} bytes", file.getOriginalFilename(), file.getSize());
             BulkImportResponse response = candidateService.importCandidatesFromCsv(file.getInputStream());
+            log.info("CSV bulk upload finished: {} submitted, {} success, {} failed in {} ms",
+                    response.totalSubmitted(), response.totalSuccess(), response.totalFailed(), response.executionTimeMs());
             return ResponseEntity.ok(response);
         } catch (IOException e) {
-            log.error("Failed to read uploaded file", e);
+            log.error("I/O error while reading uploaded CSV file: {}", file.getOriginalFilename(), e);
             throw new BadRequestException("Could not read uploaded CSV file: " + e.getMessage());
         }
     }

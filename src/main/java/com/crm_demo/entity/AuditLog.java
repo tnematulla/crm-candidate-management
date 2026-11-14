@@ -9,6 +9,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
+import java.io.Serializable;
 import java.time.Instant;
 
 @Entity
@@ -19,7 +20,9 @@ import java.time.Instant;
                 @Index(name = "idx_audit_event_type", columnList = "eventType")
         }
 )
-public class AuditLog {
+public class AuditLog implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

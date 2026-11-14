@@ -63,6 +63,7 @@ public class CandidateServiceImpl implements CandidateService {
         log.info("Creating new candidate with email: {}", request.email());
 
         if (candidateRepository.existsByEmailIgnoreCase(request.email())) {
+            log.warn("Cannot create candidate: Email '{}' already registered in system", request.email());
             throw new DuplicateResourceException("Candidate with email " + request.email() + " already exists");
         }
 
@@ -94,16 +95,21 @@ public class CandidateServiceImpl implements CandidateService {
     public CandidateResponse getCandidateById(Long id) {
         log.debug("Fetching candidate with ID: {}", id);
         Candidate candidate = candidateRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Candidate not found with id: " + id));
+                .orElseThrow(() -> {
+                    log.warn("Candidate retrieval failed: No record found with ID {}", id);
+                    return new ResourceNotFoundException("Candidate not found with id: " + id);
+                });
         return CandidateResponse.fromEntity(candidate);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<CandidateResponse> searchAndFilter(CandidateFilterCriteria criteria, Pageable pageable) {
-        log.debug("Searching candidates with criteria: {}", criteria);
+        log.debug("Building search specification for criteria: {}", criteria);
         Specification<Candidate> spec = CandidateSpecification.buildSpecification(criteria);
-        return candidateRepository.findAll(spec, pageable).map(CandidateResponse::fromEntity);
+        Page<CandidateResponse> page = candidateRepository.findAll(spec, pageable).map(CandidateResponse::fromEntity);
+        log.debug("Specification query returned {} results on page {}", page.getNumberOfElements(), page.getNumber());
+        return page;
     }
 
     @Override
@@ -111,10 +117,14 @@ public class CandidateServiceImpl implements CandidateService {
     public CandidateResponse updateCandidate(Long id, CandidateRequest request) {
         log.info("Updating candidate with ID: {}", id);
         Candidate existing = candidateRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Candidate not found with id: " + id));
+                .orElseThrow(() -> {
+                    log.warn("Candidate update failed: No record found with ID {}", id);
+                    return new ResourceNotFoundException("Candidate not found with id: " + id);
+                });
 
         // Check if updating email to another existing candidate's email
         if (candidateRepository.existsByEmailIgnoreCaseAndIdNot(request.email(), id)) {
+            log.warn("Cannot update candidate ID {}: Email '{}' already belongs to another candidate", id, request.email());
             throw new DuplicateResourceException("Candidate with email " + request.email() + " already exists");
         }
 
@@ -134,6 +144,7 @@ public class CandidateServiceImpl implements CandidateService {
         existing.setSummary(request.summary());
 
         Candidate updated = candidateRepository.save(existing);
+        log.info("Successfully saved updates for candidate ID: {}", id);
 
         // If candidate status transitioned, publish status change event
         if (oldStatus != newStatus) {
@@ -149,9 +160,11 @@ public class CandidateServiceImpl implements CandidateService {
     public void deleteCandidate(Long id) {
         log.info("Deleting candidate with ID: {}", id);
         if (!candidateRepository.existsById(id)) {
+            log.warn("Candidate deletion failed: No record found with ID {}", id);
             throw new ResourceNotFoundException("Candidate not found with id: " + id);
         }
         candidateRepository.deleteById(id);
+        log.info("Successfully deleted candidate with ID: {}", id);
     }
 
     @Override

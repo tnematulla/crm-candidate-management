@@ -96,6 +96,7 @@ public class CandidateBatchProcessor {
 
                 if (candidateRepository.existsByEmailIgnoreCase(req.email())) {
                     failedCount++;
+                    log.warn("Worker [{}] duplicate email detected and skipped: {}", threadName, req.email());
                     errors.add("Duplicate email skipped: " + req.email());
                     continue;
                 }
@@ -118,12 +119,14 @@ public class CandidateBatchProcessor {
             } catch (RuntimeException ex) {
                 failedCount++;
                 String email = req != null && req.email() != null ? req.email() : "unknown";
+                log.warn("Worker [{}] failed to process candidate [{}]: {}", threadName, email, ex.getMessage());
                 errors.add("Failed to process candidate [" + email + "]: " + ex.getMessage());
             }
         }
 
         if (!entitiesToSave.isEmpty()) {
             candidateRepository.saveAll(entitiesToSave);
+            log.info("Worker [{}] batch persisted {} candidate records", threadName, entitiesToSave.size());
         }
 
         return new ChunkResult(successCount, failedCount, errors);

@@ -42,3 +42,12 @@ crm:
     core-pool-size: 4
     max-pool-size: 8
     queue-capacity: 100
+
+logging:
+  level:
+    root: INFO
+    com.crm_demo: DEBUG
+    org.springframework.web: INFO
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%15.15t] %-5level %-38.38logger{36} - %msg%n"
