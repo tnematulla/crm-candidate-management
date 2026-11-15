@@ -243,4 +243,103 @@ class CandidateServiceTest {
         assertThatThrownBy(() -> candidateService.importCandidatesFromCsv(corruptStream))
                 .isInstanceOf(BadRequestException.class);
     }
+
+    @Test
+    @DisplayName("Create Candidate - Null status defaults to APPLIED")
+    void createCandidate_nullStatus_defaultsToApplied() {
+        CandidateRequest req = new CandidateRequest(
+                "Jane", "Doe", "jane.default@example.com", null,
+                "Software Engineer", 3, null, "Seattle, WA",
+                Set.of("Java", "Spring", "SQL"), null, null
+        );
+
+        when(candidateRepository.existsByEmailIgnoreCase(req.email())).thenReturn(false);
+        when(candidateRepository.save(any(Candidate.class))).thenAnswer(inv -> {
+            Candidate c = inv.getArgument(0);
+            c.setId(10L);
+            return c;
+        });
+
+        CandidateResponse res = candidateService.createCandidate(req);
+
+        assertThat(res.status()).isEqualTo(CandidateStatus.APPLIED);
+    }
+
+    @Test
+    @DisplayName("Update Candidate - Same status does not publish status change event")
+    void updateCandidate_sameStatus_noEventPublished() {
+        Candidate existing = new Candidate(
+                "Jane", "Doe", "jane.doe@example.com", null,
+                "Engineer", 5, null, "Austin, TX",
+                Set.of("Java", "Spring", "Docker"), CandidateStatus.SCREENING, null
+        );
+        existing.setId(1L);
+
+        when(candidateRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(candidateRepository.existsByEmailIgnoreCaseAndIdNot(any(), eq(1L))).thenReturn(false);
+        when(candidateRepository.save(any(Candidate.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        CandidateRequest updateReq = new CandidateRequest(
+                "Jane", "Doe", "jane.doe@example.com", null,
+                "Senior Engineer", 6, null, "Austin, TX",
+                Set.of("Java", "Spring", "Docker"), null, null
+        );
+
+        CandidateResponse response = candidateService.updateCandidate(1L, updateReq);
+
+        assertThat(response.status()).isEqualTo(CandidateStatus.SCREENING);
+        verify(eventPublisher, never()).publishEvent(any(CandidateStatusChangedEvent.class));
+    }
+
+    @Test
+    @DisplayName("Update Candidate - Not found throws ResourceNotFoundException")
+    void updateCandidate_notFound_throwsException() {
+        when(candidateRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> candidateService.updateCandidate(999L, sampleRequest))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Candidate not found with id: 999");
+    }
+
+    @Test
+    @DisplayName("Update Candidate - Duplicate email for another candidate throws DuplicateResourceException")
+    void updateCandidate_duplicateEmail_throwsException() {
+        Candidate existing = new Candidate(
+                "Jane", "Doe", "jane.doe@example.com", null,
+                "Engineer", 5, null, "Austin, TX",
+                Set.of("Java", "Spring", "Docker"), CandidateStatus.SCREENING, null
+        );
+        existing.setId(1L);
+
+        when(candidateRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(candidateRepository.existsByEmailIgnoreCaseAndIdNot("other.taken@example.com", 1L)).thenReturn(true);
+
+        CandidateRequest req = new CandidateRequest(
+                "Jane", "Doe", "other.taken@example.com", null,
+                "Engineer", 5, null, "Austin, TX",
+                Set.of("Java", "Spring", "Docker"), CandidateStatus.SCREENING, null
+        );
+
+        assertThatThrownBy(() -> candidateService.updateCandidate(1L, req))
+                .isInstanceOf(DuplicateResourceException.class)
+                .hasMessageContaining("already exists");
+    }
+
+    @Test
+    @DisplayName("CSV Import - Invalid status string falls back to APPLIED")
+    void importCandidatesFromCsv_invalidStatus_defaultsToApplied() {
+        String csvContent = "firstName,lastName,email,phone,currentTitle,yearsOfExperience,expectedSalary,location,skills,status,summary\n" +
+                "Ada,Taylor,ada.fallback@example.com,+1-555-1234,Lead Engineer,8,130000.00,Remote,Java;Spring;PostgreSQL,INVALID_STATUS,Analyst";
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(csvContent.getBytes(StandardCharsets.UTF_8));
+        BulkImportResponse expected = new BulkImportResponse(1, 1, 0, 15L, "Multi-Threaded", Collections.emptyList());
+
+        ArgumentCaptor<List<CandidateRequest>> captor = ArgumentCaptor.forClass(List.class);
+        when(candidateBatchProcessor.processConcurrently(captor.capture())).thenReturn(expected);
+
+        candidateService.importCandidatesFromCsv(inputStream);
+
+        List<CandidateRequest> captured = captor.getValue();
+        assertThat(captured.get(0).status()).isEqualTo(CandidateStatus.APPLIED);
+    }
 }

@@ -32,7 +32,7 @@ AI was used as an interactive pair programming partner and technical accelerator
 Every piece of AI-generated code underwent strict technical validation:
 1. **Automated Test Execution**:
    - Executed `mvn clean test` across all layers (Service, Controller, Batch Processor, Repository, Event Listener, Exception Handler).
-   - Ensured all **41 automated tests** passed deterministically, achieving **88.1% line coverage** verified by JaCoCo.
+   - Ensured all **66 automated tests** passed deterministically, achieving **100.0% line coverage** (616 / 616 lines) verified by JaCoCo.
 2. **Static Analysis & SonarQube Compliance**:
    - Inspected code for SonarQube rules: verified all exceptions and JPA entities declare `serialVersionUID`, eliminated generic `catch (Exception)`, eliminated unused imports, and ensured parameterized SLF4J logging.
 3. **Thread Safety & Concurrency Audit**:

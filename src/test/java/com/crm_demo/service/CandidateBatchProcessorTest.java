@@ -107,4 +107,45 @@ class CandidateBatchProcessorTest {
         assertThat(response.totalFailed()).isEqualTo(2);
         assertThat(response.errorMessages()).hasSize(2);
     }
+
+    @Test
+    @DisplayName("Concurrent Batch Import - Null and empty input handling")
+    void processConcurrently_nullAndEmptyInput() {
+        BulkImportResponse nullResp = batchProcessor.processConcurrently(null);
+        assertThat(nullResp.totalSubmitted()).isZero();
+        assertThat(nullResp.totalSuccess()).isZero();
+
+        BulkImportResponse emptyResp = batchProcessor.processConcurrently(List.of());
+        assertThat(emptyResp.totalSubmitted()).isZero();
+        assertThat(emptyResp.totalSuccess()).isZero();
+    }
+
+    @Test
+    @DisplayName("Concurrent Batch Import - Comprehensive validation failures and empty saveAll branch")
+    void processConcurrently_comprehensiveValidationFailures() {
+        List<CandidateRequest> invalidRequests = new ArrayList<>();
+        invalidRequests.add(null);
+        invalidRequests.add(new CandidateRequest(null, "Last", "e1@a.com", null, "Title", 5, null, "Loc", Set.of("A", "B", "C"), CandidateStatus.APPLIED, null));
+        invalidRequests.add(new CandidateRequest("First", null, "e2@a.com", null, "Title", 5, null, "Loc", Set.of("A", "B", "C"), null, null));
+        invalidRequests.add(new CandidateRequest("First", " ", "e3@a.com", null, "Title", 5, null, "Loc", Set.of("A", "B", "C"), null, null));
+        invalidRequests.add(new CandidateRequest("First", "Last", null, null, "Title", 5, null, "Loc", Set.of("A", "B", "C"), null, null));
+        invalidRequests.add(new CandidateRequest("First", "Last", " ", null, "Title", 5, null, "Loc", Set.of("A", "B", "C"), null, null));
+        invalidRequests.add(new CandidateRequest("First", "Last", "notanemail", null, "Title", 5, null, "Loc", Set.of("A", "B", "C"), null, null));
+        invalidRequests.add(new CandidateRequest("First", "Last", "e4@a.com", null, "Title", null, null, "Loc", Set.of("A", "B", "C"), null, null));
+        invalidRequests.add(new CandidateRequest("First", "Last", "e5@a.com", null, "Title", -1, null, "Loc", Set.of("A", "B", "C"), null, null));
+        invalidRequests.add(new CandidateRequest("First", "Last", "e6@a.com", null, "Title", 81, null, "Loc", Set.of("A", "B", "C"), null, null));
+        invalidRequests.add(new CandidateRequest("First", "Last", "e7@a.com", null, null, 5, null, "Loc", Set.of("A", "B", "C"), null, null));
+        invalidRequests.add(new CandidateRequest("First", "Last", "e8@a.com", null, " ", 5, null, "Loc", Set.of("A", "B", "C"), null, null));
+        invalidRequests.add(new CandidateRequest("First", "Last", "e9@a.com", null, "Title", 5, null, null, Set.of("A", "B", "C"), null, null));
+        invalidRequests.add(new CandidateRequest("First", "Last", "e10@a.com", null, "Title", 5, null, " ", Set.of("A", "B", "C"), null, null));
+        invalidRequests.add(new CandidateRequest("First", "Last", "e11@a.com", null, "Title", 5, null, "Loc", null, null, null));
+        invalidRequests.add(new CandidateRequest("First", "Last", "e12@a.com", null, "Title", 5, null, "Loc", Set.of("A", "B"), null, null));
+
+        BulkImportResponse response = batchProcessor.processConcurrently(invalidRequests);
+
+        assertThat(response.totalSubmitted()).isEqualTo(invalidRequests.size());
+        assertThat(response.totalSuccess()).isZero();
+        assertThat(response.totalFailed()).isEqualTo(invalidRequests.size());
+        assertThat(response.errorMessages()).hasSize(invalidRequests.size());
+    }
 }

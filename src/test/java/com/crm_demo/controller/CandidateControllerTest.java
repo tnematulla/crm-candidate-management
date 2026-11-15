@@ -349,4 +349,39 @@ class CandidateControllerTest {
                         .param("sort", "lastName,asc"))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    @DisplayName("GET /api/v1/candidates - Blank sort parameter defaults to createdAt desc")
+    void searchAndFilter_blankSort() throws Exception {
+        when(candidateService.searchAndFilter(any(), any()))
+                .thenReturn(new PageImpl<>(Collections.emptyList()));
+
+        mockMvc.perform(get("/api/v1/candidates")
+                        .param("sort", " "))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/candidates/bulk-upload-csv - IOException returns 400 Bad Request")
+    void uploadCsv_ioException_returns400() throws Exception {
+        org.springframework.web.multipart.MultipartFile mockFile = org.mockito.Mockito.mock(org.springframework.web.multipart.MultipartFile.class);
+        when(mockFile.isEmpty()).thenReturn(false);
+        when(mockFile.getInputStream()).thenThrow(new java.io.IOException("Disk read error"));
+        when(mockFile.getOriginalFilename()).thenReturn("error.csv");
+        when(mockFile.getSize()).thenReturn(100L);
+
+        CandidateController controller = new CandidateController(candidateService);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> controller.importCandidatesFromCsv(mockFile))
+                .isInstanceOf(com.crm_demo.exception.BadRequestException.class)
+                .hasMessageContaining("Could not read uploaded CSV file");
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/candidates/bulk-upload-csv - Null file throws BadRequestException")
+    void uploadCsv_nullFile_throwsBadRequest() {
+        CandidateController controller = new CandidateController(candidateService);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> controller.importCandidatesFromCsv(null))
+                .isInstanceOf(com.crm_demo.exception.BadRequestException.class)
+                .hasMessageContaining("must not be empty");
+    }
 }

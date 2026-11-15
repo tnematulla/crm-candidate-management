@@ -189,14 +189,17 @@ mvn clean test
 ```
 
 ### 5.2 Test Results & JaCoCo Code Coverage
-- **41 Automated Tests**: 0 failures, 0 errors, 0 skipped.
-- **Line Coverage**: **88.1%** across the application:
-  - `CandidateServiceImpl`: **97.1%**
-  - `CandidateBatchProcessor`: **93.8%**
-  - `CandidateController`: **90.0%**
-  - `CandidateEventListener`: **100%**
-  - `AsyncConfig` & `DataLoader`: **100%**
-- **Instruction Coverage**: **87.6%**.
+- **66 Automated Tests**: 0 failures, 0 errors, 0 skipped across 8 test suites.
+- **Line Coverage**: **100.0%** (616 / 616 lines covered, 0 missed lines) across all 24 classes:
+  - `CandidateServiceImpl`: **100.0%**
+  - `CandidateBatchProcessor`: **100.0%**
+  - `CandidateController`: **100.0%**
+  - `CandidateSpecification`: **100.0%**
+  - `GlobalExceptionHandler`: **100.0%**
+  - `CandidateEventListener`: **100.0%**
+  - `Candidate` & `AuditLog` Entities: **100.0%**
+  - `AsyncConfig`, `DataLoader`, `OpenApiConfig`: **100.0%**
+- **Instruction Coverage**: **99.8%** (3,048 / 3,055 instructions).
 - **Interactive HTML Report**: Generated automatically on each test run at:
   ```
   target/site/jacoco/index.html
