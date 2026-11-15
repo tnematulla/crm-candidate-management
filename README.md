@@ -72,7 +72,96 @@ Both JPA entities (`Candidate` and `AuditLog`) implement `java.io.Serializable` 
 
 ---
 
-## 4. Multi-Threading & Concurrency Architecture
+## 4. System Architecture & Concurrency Design
+
+### 4.1 High-Level Architecture Diagram
+
+```mermaid
+flowchart TD
+    subgraph ClientLayer["Clients & External Systems"]
+        UI["Web Browser / Swagger UI"]
+        CLI["cURL / Automated API Clients"]
+        CSV["Bulk CSV File Uploads"]
+    end
+
+    subgraph IngressLayer["Ingress & Container Layer"]
+        Tomcat["Embedded Tomcat Server (Java 21 Virtual Threads)"]
+    end
+
+    subgraph ControllerLayer["Controller & Validation Layer"]
+        API["CandidateController (/api/v1/candidates)"]
+        Validation["Jakarta Bean Validation & Deserialization Diagnostics"]
+    end
+
+    subgraph ServiceLayer["Business Logic & Concurrency Layer"]
+        Service["CandidateServiceImpl (CRUD, Lifecycle, Invariants)"]
+        Batch["CandidateBatchProcessor (Chunk Partitioning)"]
+        BatchPool["ThreadPoolTaskExecutor (batchTaskExecutor: 4-8 Workers)"]
+        EventPub["ApplicationEventPublisher"]
+    end
+
+    subgraph AsyncAuditLayer["Asynchronous Event Pipeline"]
+        EventListener["CandidateEventListener (@Async)"]
+        AuditPool["ThreadPoolTaskExecutor (auditTaskExecutor: 2-4 Workers)"]
+    end
+
+    subgraph PersistenceLayer["Persistence & Storage Layer"]
+        Spec["CandidateSpecification (JPA Criteria API)"]
+        CandRepo["CandidateRepository (Spring Data JPA)"]
+        AuditRepo["AuditLogRepository (Spring Data JPA)"]
+        DB[("Relational Database (In-Memory H2 / PostgreSQL)")]
+    end
+
+    UI --> Tomcat
+    CLI --> Tomcat
+    CSV --> Tomcat
+    Tomcat --> API
+    API --> Validation
+    Validation --> Service
+    Validation --> Batch
+
+    Service --> CandRepo
+    Service --> Spec
+    Service --> EventPub
+
+    Batch --> BatchPool
+    BatchPool --> Service
+
+    EventPub -. Domain Events .-> EventListener
+    EventListener --> AuditPool
+    AuditPool --> AuditRepo
+
+    CandRepo --> DB
+    AuditRepo --> DB
+```
+
+#### Component Flow Overview
+```
+[Clients: UI / cURL / CSV]
+           │
+           ▼
+[Embedded Tomcat (Java 21 Loom Virtual Threads)]
+           │
+           ▼
+[CandidateController] ──> [Bean Validation & Error Diagnostics]
+           │
+           ├───> [CandidateServiceImpl] ──> [CandidateRepository] ──> [H2 / PostgreSQL]
+           │             │                          │
+           │             └───> [Domain Events]      └──> [CandidateSpecification]
+           │                          │
+           │                          ▼
+           │             [CandidateEventListener (@Async)] ──> [AuditLogRepository]
+           │
+           └───> [CandidateBatchProcessor]
+                         │
+                         ▼
+             [batchTaskExecutor (CompletableFuture)]
+             ├── Worker 1 (Chunk 1: 50 items)
+             ├── Worker 2 (Chunk 2: 50 items)
+             └── Worker N (Chunk N: 50 items)
+```
+
+### 4.2 Multi-Threading & Concurrency Architecture
 
 Concurrency has been implemented in three distinct layers to solve real-world performance challenges:
 
