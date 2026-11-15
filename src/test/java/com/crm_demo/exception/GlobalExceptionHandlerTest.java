@@ -220,6 +220,36 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    @DisplayName("handleNoResourceFound - returns 404 with helpful endpoint guidance")
+    void handleNoResourceFound() {
+        org.springframework.web.servlet.resource.NoResourceFoundException ex =
+                new org.springframework.web.servlet.resource.NoResourceFoundException(org.springframework.http.HttpMethod.GET, "/unknown-path");
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleNoResourceFound(ex, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).contains("The requested path '/api/v1/candidates/test' does not exist");
+    }
+
+    @Test
+    @DisplayName("handleMethodNotSupported - returns 405 with supported methods")
+    void handleMethodNotSupported() {
+        org.springframework.web.HttpRequestMethodNotSupportedException ex =
+                new org.springframework.web.HttpRequestMethodNotSupportedException("POST", java.util.List.of("GET", "HEAD"));
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleMethodNotSupported(ex, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).contains("Supported methods: [GET, HEAD]");
+
+        // With null supported methods
+        org.springframework.web.HttpRequestMethodNotSupportedException nullMethodsEx =
+                new org.springframework.web.HttpRequestMethodNotSupportedException("DELETE");
+        ResponseEntity<ErrorResponse> nullMethodsResp = exceptionHandler.handleMethodNotSupported(nullMethodsEx, request);
+        assertThat(nullMethodsResp.getBody().message()).contains("Supported methods: none");
+    }
+
+    @Test
     @DisplayName("handleUnhandledException - returns 500")
     void handleUnhandledException() {
         Exception ex = new RuntimeException("Unexpected DB crash");

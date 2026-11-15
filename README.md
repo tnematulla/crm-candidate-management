@@ -189,8 +189,9 @@ mvn clean test
 ```
 
 ### 5.2 Test Results & JaCoCo Code Coverage
-- **66 Automated Tests**: 0 failures, 0 errors, 0 skipped across 8 test suites.
-- **Line Coverage**: **100.0%** (616 / 616 lines covered, 0 missed lines) across all 24 classes:
+- **69 Automated Tests**: 0 failures, 0 errors, 0 skipped across 9 test suites.
+- **Line Coverage**: **100.0%** (644 / 644 lines covered, 0 missed lines) across all 25 classes:
+  - `RootController`: **100.0%**
   - `CandidateServiceImpl`: **100.0%**
   - `CandidateBatchProcessor`: **100.0%**
   - `CandidateController`: **100.0%**
@@ -199,7 +200,7 @@ mvn clean test
   - `CandidateEventListener`: **100.0%**
   - `Candidate` & `AuditLog` Entities: **100.0%**
   - `AsyncConfig`, `DataLoader`, `OpenApiConfig`: **100.0%**
-- **Instruction Coverage**: **99.8%** (3,048 / 3,055 instructions).
+- **Instruction Coverage**: **99.8%** (3,182 / 3,189 instructions).
 - **Interactive HTML Report**: Generated automatically on each test run at:
   ```
   target/site/jacoco/index.html
@@ -229,7 +230,29 @@ The codebase is designed to meet strict SonarQube / Clean Code quality profiles:
 
 ## 6. API Endpoints Reference & Examples
 
-### 6.1 Create Candidate
+### 6.1 Service Discovery & Root Endpoint
+- Method: `GET`
+- Path: `/`
+```bash
+curl -X GET http://localhost:8085/
+```
+- Response: `200 OK`
+```json
+{
+  "service": "Candidate Management System API",
+  "status": "UP",
+  "version": "1.0.0",
+  "description": "RESTful backend service for candidate management, dynamic multi-criteria search, and concurrent batch processing.",
+  "links": {
+    "swaggerUi": "/swagger-ui.html",
+    "openApiDocs": "/v3/api-docs",
+    "candidatesApi": "/api/v1/candidates",
+    "h2Console": "/h2-console"
+  }
+}
+```
+
+### 6.2 Create Candidate
 - Method: `POST`
 - Path: `/api/v1/candidates`
 ```bash
@@ -251,7 +274,7 @@ curl -X POST http://localhost:8085/api/v1/candidates \
 ```
 - Response: `201 Created`
 
-### 6.2 View Candidate by ID
+### 6.3 View Candidate by ID
 - Method: `GET`
 - Path: `/api/v1/candidates/{id}`
 ```bash
@@ -259,7 +282,7 @@ curl -X GET http://localhost:8085/api/v1/candidates/1
 ```
 - Response: `200 OK`
 
-### 6.3 Search and Filter Candidates (Dynamic Multi-Criteria)
+### 6.4 Search and Filter Candidates (Dynamic Multi-Criteria)
 - Method: `GET`
 - Path: `/api/v1/candidates`
 - Query Parameters:
@@ -280,7 +303,7 @@ curl -X GET "http://localhost:8085/api/v1/candidates?keyword=Java&minExperience=
 ```
 - Response: `200 OK` (Spring Data paginated payload with content array and page metadata)
 
-### 6.4 Update Candidate
+### 6.5 Update Candidate
 - Method: `PUT`
 - Path: `/api/v1/candidates/{id}`
 ```bash
@@ -302,7 +325,7 @@ curl -X PUT http://localhost:8085/api/v1/candidates/1 \
 ```
 - Response: `200 OK`
 
-### 6.5 Delete Candidate
+### 6.6 Delete Candidate
 - Method: `DELETE`
 - Path: `/api/v1/candidates/{id}`
 ```bash
@@ -310,7 +333,7 @@ curl -X DELETE http://localhost:8085/api/v1/candidates/1
 ```
 - Response: `204 No Content`
 
-### 6.6 Multi-Threaded Bulk Import (JSON)
+### 6.7 Multi-Threaded Bulk Import (JSON)
 - Method: `POST`
 - Path: `/api/v1/candidates/batch`
 ```bash
@@ -347,7 +370,7 @@ curl -X POST http://localhost:8085/api/v1/candidates/batch \
 ```
 - Response: `200 OK` with execution summary, timing, and error details if any.
 
-### 6.7 Multi-Threaded Bulk Upload (CSV)
+### 6.8 Multi-Threaded Bulk Upload (CSV)
 - Method: `POST`
 - Path: `/api/v1/candidates/bulk-upload-csv`
 ```bash
@@ -378,7 +401,8 @@ crm-candidate-management
 │   │   │           │   ├── DataLoader.java
 │   │   │           │   └── OpenApiConfig.java
 │   │   │           ├── controller
-│   │   │           │   └── CandidateController.java
+│   │   │           │   ├── CandidateController.java
+│   │   │           │   └── RootController.java
 │   │   │           ├── dto
 │   │   │           │   ├── BulkImportResponse.java
 │   │   │           │   ├── CandidateFilterCriteria.java
@@ -416,7 +440,10 @@ crm-candidate-management
 │       │       └── crm_demo
 │       │           ├── CandidateManagementApplicationTest.java
 │       │           ├── controller
-│       │           │   └── CandidateControllerTest.java
+│       │           │   ├── CandidateControllerTest.java
+│       │           │   └── RootControllerTest.java
+│       │           ├── entity
+│       │           │   └── EntityAndDtoTest.java
 │       │           ├── event
 │       │           │   └── CandidateEventListenerTest.java
 │       │           ├── exception
