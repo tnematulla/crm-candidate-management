@@ -219,7 +219,7 @@ class CandidateServiceTest {
     @DisplayName("CSV Import - Parses CSV input and invokes batch processor")
     void importCandidatesFromCsv_success() {
         String csvContent = "firstName,lastName,email,phone,currentTitle,yearsOfExperience,expectedSalary,location,skills,status,summary\n" +
-                "Ada,Taylor,ada@example.com,+1-555-1234,Lead Engineer,8,130000.00,Remote,Java;Spring;PostgreSQL,OFFERED,Analyst";
+                "Jessica,Taylor,jessica@example.com,+1-555-1234,Lead Engineer,8,130000.00,Remote,Java;Spring;PostgreSQL,OFFERED,Analyst";
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(csvContent.getBytes(StandardCharsets.UTF_8));
         BulkImportResponse expected = new BulkImportResponse(1, 1, 0, 15L, "Multi-Threaded", Collections.emptyList());
@@ -329,7 +329,7 @@ class CandidateServiceTest {
     @DisplayName("CSV Import - Invalid status string falls back to APPLIED")
     void importCandidatesFromCsv_invalidStatus_defaultsToApplied() {
         String csvContent = "firstName,lastName,email,phone,currentTitle,yearsOfExperience,expectedSalary,location,skills,status,summary\n" +
-                "Ada,Taylor,ada.fallback@example.com,+1-555-1234,Lead Engineer,8,130000.00,Remote,Java;Spring;PostgreSQL,INVALID_STATUS,Analyst";
+                "Jessica,Taylor,jessica.fallback@example.com,+1-555-1234,Lead Engineer,8,130000.00,Remote,Java;Spring;PostgreSQL,INVALID_STATUS,Analyst";
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(csvContent.getBytes(StandardCharsets.UTF_8));
         BulkImportResponse expected = new BulkImportResponse(1, 1, 0, 15L, "Multi-Threaded", Collections.emptyList());

@@ -49,7 +49,7 @@ public class DataLoader {
                 );
 
                 Candidate c4 = new Candidate(
-                        "Sarah", "Connor", "sarah.wilson@example.com", "+1-555-0104",
+                        "Sarah", "Wilson", "sarah.wilson@example.com", "+1-555-0104",
                         "Data Platform Engineer", 5, new BigDecimal("125000.00"),
                         "Austin, TX", Set.of("Python", "Java", "Apache Spark", "Kafka"),
                         CandidateStatus.OFFERED,

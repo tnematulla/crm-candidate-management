@@ -18,9 +18,9 @@ class EntityAndDtoTest {
     void candidateEntityFullCoverage() {
         Candidate c1 = new Candidate();
         c1.setId(100L);
-        c1.setFirstName("Ada");
+        c1.setFirstName("Jessica");
         c1.setLastName("Taylor");
-        c1.setEmail("ada@example.com");
+        c1.setEmail("jessica@example.com");
         c1.setPhone("+1-555-1234");
         c1.setCurrentTitle("Chief Scientist");
         c1.setYearsOfExperience(10);
@@ -35,9 +35,9 @@ class EntityAndDtoTest {
         c1.setUpdatedAt(now);
 
         assertThat(c1.getId()).isEqualTo(100L);
-        assertThat(c1.getFirstName()).isEqualTo("Ada");
+        assertThat(c1.getFirstName()).isEqualTo("Jessica");
         assertThat(c1.getLastName()).isEqualTo("Taylor");
-        assertThat(c1.getEmail()).isEqualTo("ada@example.com");
+        assertThat(c1.getEmail()).isEqualTo("jessica@example.com");
         assertThat(c1.getPhone()).isEqualTo("+1-555-1234");
         assertThat(c1.getCurrentTitle()).isEqualTo("Chief Scientist");
         assertThat(c1.getYearsOfExperience()).isEqualTo(10);
@@ -66,7 +66,7 @@ class EntityAndDtoTest {
         assertThat(c1.equals("different object type")).isFalse();
 
         Candidate c2 = new Candidate();
-        c2.setEmail("ADA@EXAMPLE.COM");
+        c2.setEmail("JESSICA@EXAMPLE.COM");
         assertThat(c1.equals(c2)).isTrue();
         assertThat(c1.hashCode()).isEqualTo(c2.hashCode());
 
@@ -136,8 +136,8 @@ class EntityAndDtoTest {
         assertThat(CandidateResponse.fromEntity(null)).isNull();
 
         Candidate candidate = new Candidate(
-                "Grace", "Watson", "grace@example.com", null,
-                "Platform Engineer", 30, null, "Arlington, VA",
+                "Emily", "Watson", "emily@example.com", null,
+                "Platform Engineer", 12, null, "Arlington, VA",
                 null, CandidateStatus.HIRED, null
         );
         candidate.setId(99L);

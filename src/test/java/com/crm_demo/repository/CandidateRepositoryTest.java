@@ -30,21 +30,21 @@ class CandidateRepositoryTest {
         candidateRepository.deleteAll();
 
         Candidate c1 = new Candidate(
-                "Michael", "Scott", "michael.clark@example.com", "+1-555-1111",
+                "Michael", "Clark", "michael.clark@example.com", "+1-555-1111",
                 "Regional Manager", 12, new BigDecimal("80000.00"),
                 "Scranton, PA", Set.of("Leadership", "Sales"),
                 CandidateStatus.INTERVIEWED, "Experienced branch manager"
         );
 
         Candidate c2 = new Candidate(
-                "Dwight", "Schrute", "daniel.wright@example.com", "+1-555-2222",
+                "Daniel", "Wright", "daniel.wright@example.com", "+1-555-2222",
                 "Assistant to the Regional Manager", 8, new BigDecimal("75000.00"),
                 "Scranton, PA", Set.of("Sales", "Java", "Security"),
                 CandidateStatus.SCREENING, "Top salesman with technical acumen"
         );
 
         Candidate c3 = new Candidate(
-                "Jim", "Halpert", "james.harper@example.com", "+1-555-3333",
+                "James", "Harper", "james.harper@example.com", "+1-555-3333",
                 "Senior Account Executive", 6, new BigDecimal("70000.00"),
                 "Philadelphia, PA", Set.of("Sales", "Client Relations"),
                 CandidateStatus.APPLIED, "Strong communication skills"
@@ -67,7 +67,7 @@ class CandidateRepositoryTest {
     void findByEmailIgnoreCase_found() {
         Optional<Candidate> candidate = candidateRepository.findByEmailIgnoreCase("daniel.wright@example.com");
         assertThat(candidate).isPresent();
-        assertThat(candidate.get().getFirstName()).isEqualTo("Dwight");
+        assertThat(candidate.get().getFirstName()).isEqualTo("Daniel");
     }
 
     @Test
@@ -81,7 +81,7 @@ class CandidateRepositoryTest {
         Page<Candidate> results = candidateRepository.findAll(spec, PageRequest.of(0, 10));
 
         assertThat(results.getContent()).hasSize(1);
-        assertThat(results.getContent().get(0).getFirstName()).isEqualTo("Dwight");
+        assertThat(results.getContent().get(0).getFirstName()).isEqualTo("Daniel");
     }
 
     @Test
@@ -120,7 +120,7 @@ class CandidateRepositoryTest {
         Specification<Candidate> spec = CandidateSpecification.buildSpecification(criteria);
         Page<Candidate> results = candidateRepository.findAll(spec, PageRequest.of(0, 10));
         assertThat(results.getContent()).hasSize(1);
-        assertThat(results.getContent().get(0).getFirstName()).isEqualTo("Dwight");
+        assertThat(results.getContent().get(0).getFirstName()).isEqualTo("Daniel");
 
         // 3. Blank location and skills with only blank tags
         CandidateFilterCriteria blankCriteria = new CandidateFilterCriteria(
